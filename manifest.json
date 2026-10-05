@@ -1,0 +1,66 @@
+{
+  "manifest_version": 3,
+  "name": "Media Tab Controller",
+  "version": "1.0",
+  "description": "Control media playback in background tabs via global keyboard shortcuts. Works with Brave, Chrome, Edge. Built for Cyboard Imprint.",
+  "permissions": ["tabs", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "all_frames": true,
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "media-play-pause": {
+      "suggested_key": {
+        "default": "Alt+Shift+0"
+      },
+      "description": "Play/Pause media (silent)",
+      "global": true
+    },
+    "media-seek-backward": {
+      "suggested_key": {
+        "default": "Alt+Shift+9"
+      },
+      "description": "Seek backward 5s (silent)",
+      "global": true
+    },
+    "media-seek-forward": {
+      "suggested_key": {
+        "default": "Alt+Shift+8"
+      },
+      "description": "Seek forward 5s (silent)",
+      "global": true
+    },
+    "media-focus-tab": {
+      "suggested_key": {
+        "default": "Alt+Shift+7"
+      },
+      "description": "Focus the media tab",
+      "global": true
+    },
+    "media-speed-up": {
+      "description": "Increase playback speed"
+    },
+    "media-speed-down": {
+      "description": "Decrease playback speed"
+    },
+    "media-quality-max": {
+      "description": "Set maximum video quality"
+    },
+    "media-quality-cycle": {
+      "description": "Cycle through video quality levels"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

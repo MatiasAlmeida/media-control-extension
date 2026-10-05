@@ -21,7 +21,7 @@ must be assigned manually at `brave://extensions/shortcuts` after installation.
 
 - **Silent control**: play/pause and seeking work without stealing focus from your current window.
 - **Smart tab tracking**: remembers the last media tab even after you pause it, so you can resume without hunting for it.
-- **No content scripts injected on every page** — code only runs in the target tab when you press a shortcut.
+- **Idle content script**: `content.js` is loaded in every page (all frames) but does nothing until a shortcut is pressed — it only acts as a fallback when direct injection can't reach the media element.
 
 ## Installation
 
@@ -79,7 +79,9 @@ long as Chrome's shortcut settings match what ZMK sends.
    back to the last known media tab), then uses `chrome.scripting.executeScript`
    to directly call `.play()`, `.pause()`, or adjust `.currentTime` on the
    `<video>` / `<audio>` element — all without changing focus.
-3. On focus: it activates the media tab and brings Chrome to the foreground.
+3. If direct injection fails, it falls back to messaging `content.js`, which is
+   already loaded in the page and performs the same action.
+4. On focus: it activates the media tab and brings Chrome to the foreground.
 
 ## Notes
 

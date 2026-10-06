@@ -1,4 +1,4 @@
-# Media Tab Controller — Chromium Extension (Brave / Chrome / Edge)
+# Media Tab Controller — Browser Extension (Brave / Chrome / Edge / Firefox / Zen)
 
 Control media playback in any background tab without switching focus.
 Built for use with ZMK keyboards (Cyboard Imprint).
@@ -16,8 +16,9 @@ Built for use with ZMK keyboards (Cyboard Imprint).
 | Quality Max     | Alt+Shift+4 \*    | Force highest available resolution      |
 | Quality Cycle   | Alt+Shift+5 \*    | Cycle: Auto → 1080p → 720p → ... → Auto |
 
-\* Chromium only allows 4 suggested shortcuts per extension manifest, so these
-must be assigned manually at `brave://extensions/shortcuts` after installation.
+\* Chromium only allows 4 suggested shortcuts per extension manifest, so in
+Chromium these must be assigned manually at `brave://extensions/shortcuts` after
+installation. Firefox and Zen get all eight automatically (see "Firefox / Zen").
 
 - **Silent control**: play/pause and seeking work without stealing focus from your current window.
 - **Smart tab tracking**: remembers the last media tab even after you pause it, so you can resume without hunting for it.
@@ -95,3 +96,32 @@ long as Chrome's shortcut settings match what ZMK sends.
   content.
 - The seek duration (5 seconds) is hardcoded in `background.js` — change the
   `{ seconds: 5 }` value if you prefer a different interval.
+
+## Firefox / Zen
+
+The same files work in Firefox and Zen (Firefox-based): the manifest declares
+both `background.service_worker` (used by Chromium) and `background.scripts`
+(used by Firefox 121+), plus a fixed Gecko ID, `media-tab-controller@matiasalmeida`
+(`browser_specific_settings`), and the scripts call the APIs through
+`globalThis.browser ?? globalThis.chrome`. Firefox ignores the Chromium-only
+`key` and `global` fields.
+
+- **Shortcuts**: on install, the extension assigns the four shortcuts that
+  Chromium can't suggest (speed and quality) with `commands.update`, which only
+  Firefox has. Change any of them at `about:addons` → gear menu → *Manage
+  Extension Shortcuts*; later updates don't overwrite them.
+- **No global shortcuts**: Firefox has no equivalent of Chromium's `global`
+  scope, so the shortcuts only fire while the browser window has keyboard
+  focus. To use them from other apps, let the window manager catch the combos
+  and forward them to the browser window (e.g. Hyprland's `send_shortcut`
+  dispatcher with a window selector).
+- **Focus Media Tab** activates the tab, but on Wayland an app can't raise its
+  own window; the window manager has to focus it.
+- **Installing**: for a quick test, `about:debugging#/runtime/this-firefox` →
+  *Load Temporary Add-on* → pick `manifest.json` (removed on restart). A
+  permanent install of this unsigned extension needs
+  `xpinstall.signatures.required = false`, which only builds without enforced
+  signing honor: Zen, Firefox Developer Edition, Nightly, ESR and unbranded
+  builds, not release Firefox. Package it as an `.xpi` (a zip of
+  `manifest.json`, `background.js`, `content.js` and the icons) and install it
+  from the add-ons page or with an enterprise policy (`ExtensionSettings`).

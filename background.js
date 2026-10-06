@@ -1,17 +1,45 @@
+// Firefox and Zen expose the WebExtension APIs as `browser`, with promises;
+// Chrome added `browser` in version 148 and keeps `chrome` (promises in
+// Manifest V3), so this works in both.
+const api = globalThis.browser ?? globalThis.chrome;
+
+// Chromium accepts at most 4 suggested shortcuts per manifest, so the other
+// four commands get theirs here, in browsers that let an extension set its
+// own shortcuts (Firefox and Zen have commands.update; Chromium doesn't, and
+// there they are assigned by hand at brave://extensions/shortcuts). Only on
+// install, so shortcuts changed later in about:addons are kept.
+const EXTRA_SHORTCUTS = {
+  'media-speed-down': 'Alt+Shift+Comma',
+  'media-speed-up': 'Alt+Shift+Period',
+  'media-quality-max': 'Alt+Shift+4',
+  'media-quality-cycle': 'Alt+Shift+5',
+};
+
+api.runtime.onInstalled.addListener(async ({ reason }) => {
+  if (reason !== 'install' || typeof api.commands.update !== 'function') return;
+  for (const [name, shortcut] of Object.entries(EXTRA_SHORTCUTS)) {
+    try {
+      await api.commands.update({ name, shortcut });
+    } catch (err) {
+      console.warn('[Media Controller] Could not set shortcut', name, err);
+    }
+  }
+});
+
 // Track audible tabs — persisted to storage so it survives service worker restarts
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+api.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.audible === true) {
-    await chrome.storage.local.set({
+    await api.storage.local.set({
       lastMediaTabId: tabId,
       lastMediaWindowId: tab.windowId,
     });
   }
 });
 
-chrome.tabs.onRemoved.addListener(async (tabId) => {
-  const { lastMediaTabId } = await chrome.storage.local.get('lastMediaTabId');
+api.tabs.onRemoved.addListener(async (tabId) => {
+  const { lastMediaTabId } = await api.storage.local.get('lastMediaTabId');
   if (tabId === lastMediaTabId) {
-    await chrome.storage.local.remove(['lastMediaTabId', 'lastMediaWindowId']);
+    await api.storage.local.remove(['lastMediaTabId', 'lastMediaWindowId']);
   }
 });
 
@@ -21,12 +49,12 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
  */
 async function findMediaTab() {
   // First, try currently audible tabs
-  const audibleTabs = await chrome.tabs.query({ audible: true });
+  const audibleTabs = await api.tabs.query({ audible: true });
   if (audibleTabs.length > 0) {
-    const { lastMediaTabId } = await chrome.storage.local.get('lastMediaTabId');
+    const { lastMediaTabId } = await api.storage.local.get('lastMediaTabId');
     const tracked = audibleTabs.find((t) => t.id === lastMediaTabId);
     const tab = tracked || audibleTabs[0];
-    await chrome.storage.local.set({
+    await api.storage.local.set({
       lastMediaTabId: tab.id,
       lastMediaWindowId: tab.windowId,
     });
@@ -34,13 +62,13 @@ async function findMediaTab() {
   }
 
   // Fall back to last known media tab from storage
-  const { lastMediaTabId } = await chrome.storage.local.get('lastMediaTabId');
+  const { lastMediaTabId } = await api.storage.local.get('lastMediaTabId');
   if (lastMediaTabId != null) {
     try {
-      const tab = await chrome.tabs.get(lastMediaTabId);
+      const tab = await api.tabs.get(lastMediaTabId);
       return tab;
     } catch {
-      await chrome.storage.local.remove([
+      await api.storage.local.remove([
         'lastMediaTabId',
         'lastMediaWindowId',
       ]);
@@ -133,7 +161,7 @@ async function executeMediaAction(tab, action, args = {}) {
   // custom JS properties like videoRenditions on web components
   if (action === 'quality-max' || action === 'quality-cycle') {
     try {
-      const results = await chrome.scripting.executeScript({
+      const results = await api.scripting.executeScript({
         target: { tabId: tab.id },
         world: 'MAIN',
         func: controlQualityMainWorld,
@@ -153,7 +181,7 @@ async function executeMediaAction(tab, action, args = {}) {
   // For all other actions: isolated world is fine
   // Strategy 1: direct executeScript in all frames
   try {
-    const results = await chrome.scripting.executeScript({
+    const results = await api.scripting.executeScript({
       target: { tabId: tab.id, allFrames: true },
       func: controlMediaDirect,
       args: [action, args],
@@ -167,7 +195,7 @@ async function executeMediaAction(tab, action, args = {}) {
 
   // Strategy 2: message content script
   try {
-    const response = await chrome.tabs.sendMessage(tab.id, {
+    const response = await api.tabs.sendMessage(tab.id, {
       target: 'media-content-script',
       action: action,
       args: args,
@@ -297,7 +325,7 @@ function controlMediaDirect(action, args) {
   return false;
 }
 
-chrome.commands.onCommand.addListener(async (command) => {
+api.commands.onCommand.addListener(async (command) => {
   const tab = await findMediaTab();
 
   if (!tab) {
@@ -316,8 +344,8 @@ chrome.commands.onCommand.addListener(async (command) => {
       await executeMediaAction(tab, 'seek-forward', { seconds: 5 });
       break;
     case 'media-focus-tab':
-      await chrome.tabs.update(tab.id, { active: true });
-      await chrome.windows.update(tab.windowId, { focused: true });
+      await api.tabs.update(tab.id, { active: true });
+      await api.windows.update(tab.windowId, { focused: true });
       break;
     case 'media-quality-max':
       await executeMediaAction(tab, 'quality-max');

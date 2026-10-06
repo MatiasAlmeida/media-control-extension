@@ -1,13 +1,20 @@
 {
   "manifest_version": 3,
   "name": "Media Tab Controller",
-  "version": "1.0",
-  "description": "Control media playback in background tabs via global keyboard shortcuts. Works with Brave, Chrome, Edge. Built for Cyboard Imprint.",
+  "version": "1.1",
+  "description": "Control media playback in background tabs via keyboard shortcuts. Works with Brave, Chrome, Edge, Firefox and Zen. Built for Cyboard Imprint.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAk0+HYIaP424zWvb8qPxnGZoU1g6QYV/QDlW5SaSzFQioU/HrSJUSbz4JZYuXEIZ1QA6RNWnyCCA5BlJGWInZPUawnq1bSRm0k4GBasbgW3BxfPI6w3nnaS9OfR99aq/oBUF5Lac50Qrq8Z33bmGLNwVaaTeo7aq8T7ftnnAn5okwZO2CZY3ZbP+J5CLhKSoLa8ifm+ppvG7/6Tzezm3ZlAfTdMoKmGlRsanTjDWKFOR/4qVRJtKnZyZ/3ifPCidIM8Plwy6KnzWeQDJJ/Uql6166uRmnTCir/zCwiJJUyOY9RjUnnki179wJm9lu94Q7VFhckg3PPZHqK3R7W2rBvwIDAQAB",
   "permissions": ["tabs", "scripting", "storage"],
   "host_permissions": ["<all_urls>"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "media-tab-controller@matiasalmeida",
+      "strict_min_version": "128.0"
+    }
   },
   "content_scripts": [
     {

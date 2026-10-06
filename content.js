@@ -4,6 +4,9 @@
  * Quality control via Mux Player videoRenditions.selectedIndex API.
  */
 
+// `browser` in Firefox, Zen and Chrome >= 148; `chrome` in older Chrome.
+const api = globalThis.browser ?? globalThis.chrome;
+
 function findAllMedia(root = document) {
   const media = [];
   media.push(...root.querySelectorAll("video, audio"));
@@ -144,7 +147,7 @@ function handleQuality(action) {
   return { handled: false };
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+api.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.target !== "media-content-script") return false;
 
   const action = message.action;
